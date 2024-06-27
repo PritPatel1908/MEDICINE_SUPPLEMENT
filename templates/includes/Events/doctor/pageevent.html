@@ -1,0 +1,102 @@
+<!-- Send Prescription -->
+<script type="text/javascript">
+    $(document).ready(function(){
+        $('#prescription_form').submit(function(e){
+            e.preventDefault();
+
+            var prescription_detail_id = $('#prescription_detail_id').val();
+            var prescription_id = $('#prescription_id').val();
+
+            var form_data = new FormData();
+
+            form_data.append('prescription_detail_id', prescription_detail_id);
+            form_data.append('prescription_id', prescription_id);
+            form_data.append('prescription_img', $('#prescription_img')[0].files[0]);
+
+            $.ajax({
+                url: "{% url 'send_prescription' %}",
+                type: "POST",
+                mimeType: "multipart/form-data",
+                contentType: false,
+                processData: false,
+                data: form_data,
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                success: () => {
+                    $(window).scrollTop(0);
+                    $("#prescription_form").load(location.href + " #prescription_form>*", "");
+                    $("#status_card").load(location.href + " #status_card>*", "");
+                    $("#success").html(
+                        `
+                        <div class="alert alert-success" roal="success">
+                            Your Offer Is Added...
+                        </div>
+                        `
+                    )
+                    setInterval(function(){
+                        $('.alert').fadeOut();
+                    }, 3000)
+                }
+            });
+        });
+    });
+</script>
+
+<!-- Give permission without page reload -->
+<script>
+    $(document).on('click', '#approve_btn', function(e){
+        e.preventDefault();
+
+        var prescription_detail_id = $(this).data('item-id');
+        var prescription_id = $(this).data('item-id2');
+
+        $.ajax({
+            url: '../approve_prescription/' + prescription_id +'/'+prescription_detail_id ,
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: () => {
+                $(window).scrollTop(0);
+                $("#status_card").load(location.href + " #status_card>*", "");
+                $("#success").html(
+                    `
+                    <div class="alert alert-success" roal="success">
+                        Your Prescription Status Is Updated...
+                    </div>
+                    `
+                )
+                setInterval(function(){
+                    $('.alert').fadeOut();
+                }, 3000)
+            }
+        });
+    })
+</script>
+
+<!-- Give permission without page reload -->
+<script>
+    $(document).on('click', '#reject_btn', function(e){
+        e.preventDefault();
+
+        var prescription_detail_id = $(this).data('item-id');
+        var prescription_id = $(this).data('item-id2');
+
+        $.ajax({
+            url: '../reject_prescription/' + prescription_id +'/'+prescription_detail_id ,
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: () => {
+                $(window).scrollTop(0);
+                $("#status_card").load(location.href + " #status_card>*", "");
+                $("#success").html(
+                    `
+                    <div class="alert alert-success" roal="success">
+                        Your Prescription Status Is Updated...
+                    </div>
+                    `
+                )
+                setInterval(function(){
+                    $('.alert').fadeOut();
+                }, 3000)
+            }
+        });
+    })
+</script>

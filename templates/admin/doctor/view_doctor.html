@@ -1,0 +1,64 @@
+{% extends 'admin-base.html' %}
+{% load static %}
+{% block content %}
+<main id="main" class="main">
+    <div id="success"></div>
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col">
+                        <ul class="breadcrumb mt-3">
+                            <li class="breadcrumb-item"><a href="{% url 'admin_home' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item">Doctor</li>
+                            <li class="breadcrumb-item active">View Doctor</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="card card-table">
+                            <div class="card-body">
+                                <div class="table-responsive mt-2">                  
+                                    <table class="table table-hover table-center mb-0" id="table">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Username</th>
+                                                <th>First Name</th>
+                                                <th>Last Name</th>
+                                                <th>Email</th>
+                                                <!-- <th>Profile Pic</th> -->
+                                                <th class="text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="table-group-divider" id="main_div">
+                                            {% for i in doctor %}
+                                            <tr>
+                                                <td>{{forloop.counter}}</td>
+                                                <td>{{i.username}}</td>
+                                                <td>{{i.first_name}}</td>
+                                                <td>{{i.last_name}}</td>
+                                                <td>{{i.email}}</td>
+                                                <!-- <td><img src="/{{i.profile_pic}}" alt="" height="60px" width="60px" class="rounded-circle"></td> -->
+                                                <td class="text-right">
+                                                    <div class="actions">
+                                                        <a href="{% url 'delete_doctor' i.user_id %}" class="btn btn-sm bg-danger-light" id="delete_category">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock  %}

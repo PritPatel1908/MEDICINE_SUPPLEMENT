@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+{% load product_filter %}
+<head>
+  <title>Medicine Masters Order Invoice</title>
+  <style>
+    .clearfix:after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+
+    a {
+      text-decoration: underline;
+    }
+
+    body {
+      position: relative;
+      margin: 0 auto; 
+      color: #001028;
+      background: #FFFFFF; 
+      font-family: Arial, sans-serif; 
+      font-size: 14px; 
+      font-family: Arial;
+    }
+
+    header {
+      padding: 10px 0;
+      margin-bottom: 30px;
+    }
+
+    #logo {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      color: #5D6975;
+      font-size: 2.4em;
+      line-height: 1.4em;
+      font-weight: normal;
+      text-align: center;
+      margin: 0 0 20px 0;
+    }
+
+    #project {
+      float: left;
+    }
+
+    #project span {
+      color: #5D6975;
+      margin-right: 10px;
+      display: inline-block;
+      font-size: 14px;
+    }
+
+    #company {
+      float: right;
+      text-align: right;
+    }
+
+    #project div,
+    #company div {
+      white-space: nowrap;        
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-spacing: 0;
+      margin-bottom: 20px;
+    }
+
+    table th,
+    table td {
+      text-align: center;
+    }
+
+    table th {
+      color: #5D6975;
+      border-bottom: 1px solid #C1CED9;
+      white-space: nowrap;        
+      font-weight: normal;
+    }
+
+    table .service,
+    table .desc {
+      text-align: left;
+    }
+
+    table td {
+    padding-top:5px;
+    padding-bottom:5px;
+      
+    }
+
+    table tr {
+      border-bottom: 1px solid #C1CED9;
+    }
+
+    table td.service,
+    table td.desc {
+      vertical-align: top;
+    }
+
+    table td.unit,
+    table td.qty,
+    table td.total {
+      font-size: 1.2em;
+    }
+
+    table td.grand {
+      border-top: 1px solid #5D6975;;
+    }
+
+    #notices .notice {
+      color: #5D6975;
+      font-size: 1.2em;
+    }
+
+    footer {
+      color: #5D6975;
+      width: 100%;
+      height: 30px;
+      position: absolute;
+      bottom: 0;
+      border-top: 1px solid #C1CED9;
+      padding: 8px 0;
+      text-align: center;
+    }
+
+    img {
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="clearfix">
+    <div id="logo" style="display:flex; justify-content:center; align-items:center;">
+      <!-- <img src="static/firstapp/images/logo.png" class="brand-logo" width=60 height=60> not working -->
+      <!-- {#<img src="static/logo.png" class="brand-logo" height="200px">#} not working -->
+      <!-- <img src="../images/Medicine Masters.png" class="brand-logo" width=60 height=60> -->
+      <h1 class="brand-name">Medicine Masters</h1>
+    </div>
+    <h1>INVOICE</h1>
+    <div id="company" class="clearfix">
+      <div>Medicine Masters</div>
+      <div><a href="mailto:medicinemasters23@gmail.com">medicinemasters23@gmail.com</a></div>
+      <div><a href="http://127.0.0.1:8000/">Medicine Masters</a></div>
+    </div>
+    <div id="project">
+      <div><span>Customer Name:</span> {{order.first_name}} {{order.last_name}}</div>
+      <div><span>Customer Email:</span> <a href="mailto:{{email}}">{{order.email}}</a></div>
+      <div><span>Customer Phone:</span> <a href="">{{order.phone}}</a></div>
+      <div><span>Order Date:</span> {{order.order_date|date:'d-M-Y'}}</div>
+      <div class="col-6"><span>Delivery Address:</span> {{order.order_delivery_address}},{{order.order_delivery_address_pincode}}</div>
+      <div><span>Invoice ID:</span> {{order.order_tracking_id}}</div>
+      <!-- <div><span>TRANSACTION ID:</span> {{transaction_id}}</div> -->
+    </div>
+    <br>
+    <br>
+  </header>
+    <div class="table-container" style="overflow-x:auto">
+      <table class="table" style="width:100%">
+          <thead>
+              <tr>
+                  <th scope="col">PRODUCT</th>
+                  <th scope="col">QUANTITY</th>
+                  <th scope="col">PRICE</th>
+                  <th scope="col">TOTAL</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for i in order_detail %}
+              <tr>
+                  <td scope="row">{{i.product_name}}</td>
+                  <td>{{i.product_quantity}}</td>
+                  <td>{{i.product_price}}</td>
+                  <td>{{ i.product_price|product:i.product_quantity }}</td>
+              </tr>
+              {% endfor %}
+              <tr>
+                <td scope="row"></td>
+                <td scope="row"></td>
+                <td><b>Sub Total : </b></td>
+                <td>{{sub_total}}</td>
+              </tr>
+              <tr>
+                <td scope="row"></td>
+                <td scope="row"></td>
+                <td><b>Order Discount Price : </b></td>
+                <td>{{order.order_discount_price}}</td>
+              </tr>
+              <tr>
+                <td scope="row"></td>
+                <td scope="row"></td>
+                <td><b>Shipping Price : </b></td>
+                <td>{{order.shipping_price}}</td>
+              </tr>
+              <tr>
+                  <td scope="row"></td>
+                  <td scope="row"></td>
+                  <td><b>Total : </b></td>
+                  <td>{{order.order_total_amount}}</td>
+              </tr>
+          </tbody>
+      </table>
+
+    </div>
+    <p style="text-align:right; font-size:12px;">*GST Is Include In Total<p>
+</body>
+
+</html>

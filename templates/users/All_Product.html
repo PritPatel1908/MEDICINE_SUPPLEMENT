@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load cart %}
+{% block content %}
+<!-- Products -->
+<div class="position-fixed top-5 end-0 p-3" id="myAlert" style="z-index: 11;">
+</div>
+<section class="shadow" style="background-color: #eee;">
+    <div class="container py-4">
+        <div class="row">
+            <div class="col">
+                <nav aria-label="breadcrumb" class="bg-light rounded-3 p-3 mb-4 shadow">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'users_home' %}">Home</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">All Product</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        <section class="">
+          <div class="container">
+            <div class="row">
+              <!-- sidebar -->
+              <div class="col-lg-3">
+                <!-- Toggle button -->
+                <button class="btn btn-outline-secondary mb-3 w-100 d-lg-none" type="button" data-mdb-collapse-init data-mdb-ripple-init data-mdb-target="#filterSupportedContent" aria-expanded="false" aria-controls="navbarSupportedContent">
+                  <span>Show filter</span>
+                </button>
+                <!-- Collapsible wrapper -->
+                <div class="collapse card d-lg-block mb-5" id="filterSupportedContent">
+                  <div class="accordion" id="accordionPanelsStayOpenExample">
+                    <div class="accordion-item">
+                      <h2 class="accordion-header" id="headingOne">
+                      <button class="accordion-button text-dark bg-light" type="button" data-mdb-collapse-init data-mdb-ripple-init data-mdb-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne" >
+                          All Category
+                        </button>
+                      </h2>
+                      <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne">
+                        <div class="accordion-body">
+                          <ul class="list-unstyled">
+                            {% for i in subcategory %}
+                            <li><a href="{% url 'filter_category' i.subcategory_id %}" id="filter_category" class="text-dark">{{i.subcategory_name}}</a></li>
+                            {% endfor %}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="accordion-item">
+                      <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button text-dark bg-light" type="button" data-mdb-collapse-init data-mdb-ripple-init data-mdb-target="#panelsStayOpen-collapseTwo" aria-expanded="true" aria-controls="panelsStayOpen-collapseTwo" >
+                          Company
+                        </button>
+                      </h2>
+                      <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show" aria-labelledby="headingTwo">
+                        <div class="accordion-body">
+                          <div>
+                            <ul class="list-unstyled">
+                              {% for i in company %}
+                              
+                              <li><a href="{% url 'filter_company' i.company_id %}" id="filter_company" class="text-dark">{{i.company_name}}</a></li>
+                              
+                              {% endfor %}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-9">
+                <header class="d-sm-flex align-items-center border-bottom mb-4 pb-3">
+                  <strong class="d-block py-2">{{product_count}} Items found </strong>
+                </header>
+
+                <div class="row cart_detail" id="my_cart">
+                  {% for i in product %}
+                  <div class="col-lg-4 col-md-6 col-sm-6 d-flex mb-5">
+                    <div class="card w-100 h-100 my-2 shadow-2-strong">
+                      <a href="{% url 'product_detail' i.product_id %}">
+                        <img src="/{{i.product_img}}" class="card-img-top p-5" style="aspect-ratio: 1 / 1" />
+                      </a>
+                      <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{i.product_name}}</h5>
+                        <div class="card-footer d-flex align-items-end pt-3 px-0 pb-0 mt-auto">
+                          {% if user.is_authenticated %}
+                            {% if i|is_in_cart:cart %}
+                            <div class="input-group">
+                              <div class="col">
+                                <button data-item-id="{{ i.product_id }}" class="btn btn-white border border-secondary px-3 ms-2" style="height: 35px;" id="all_product_minus_qty" data-mdb-ripple-color="dark">
+                                  <i class="fas fa-minus"></i>
+                                </button>
+                              </div>
+
+                              <div class="col" id="cart_qty_value">
+                                <input id="cart_qty" type="text" class="form-control text-center border border-secondary rounded" value="{{i|cart_qty:cart}}" aria-label="Example text with button addon" aria-describedby="button-addon1" disabled />
+                              </div>
+              
+                              <div class="col">
+                                <button data-item-id="{{ i.product_id }}" class="btn btn-white border border-secondary px-3 ms-2" style="height: 35px;" id="all_product_plus_qty" data-mdb-ripple-color="dark">
+                                  <i class="fas fa-plus"></i>
+                                </button>
+                              </div>
+                            </div>
+                            {% else %}
+                            <form action="{% url 'add_to_cart' %}" method="POST" enctype="multipart/form-data" id="add_to_cart">
+                              {% csrf_token %}
+                              <button data-item-id="{{i.product_id}}" class="btn btn-primary shadow me-1" type="submit" value="Add To Cart" id="all_product_id_cart_item">Add To Cart</button>
+                            </form>
+                            {% endif %}
+                          {% else %}
+                            {% if user.is_authenticated %}
+                              <a href="{% url 'checkout' i.product_id %}" class="btn btn-primary shadow" type="submit">Buy Now</a>
+                            {% else %}
+                              <button type="button" class="btn btn-primary" data-mdb-ripple-init data-mdb-modal-init data-mdb-target="#exampleModal">
+                                Buy Now
+                              </button>
+                            {% endif %}
+                          {% endif %}
+                          <p class="card-text ms-4 mb-1">₹{{i.product_discount_price}}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+                </div>
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <div class="modal-body">If you don't have an account, first create a account</div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-mdb-ripple-init data-mdb-dismiss="modal">Close</button>
+                        <a href="{% url 'login_page' %}" type="button" class="btn btn-primary" data-mdb-ripple-init>Login</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <hr />
+              </div>
+            </div>
+          </div>
+        </section>
+    </div>
+</section>
+<!-- Products -->
+{% endblock  %}
