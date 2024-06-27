@@ -13,7 +13,7 @@ from channels.auth import AuthMiddlewareStack
 from django.urls import path
 from django.core.asgi import get_asgi_application
 from medicine_supplement_app.consumers import *
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'medicinemasters.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'MEDICINE_SUPPLEMENT.settings')
 
 application = get_asgi_application()
 
