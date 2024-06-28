@@ -17,10 +17,35 @@
         <link rel="stylesheet" href="{% static 'medicine_masters_assets/css/style.css' %}" />
 
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
         <script src="https://unpkg.com/@trevoreyre/autocomplete-js"></script>
         <link rel="stylesheet" href="https://unpkg.com/@trevoreyre/autocomplete-js/dist/style.css"/>
 
         <style>
+            .button-contactForm {
+                background: #3BB77E;
+                color: #fff;
+                border-color: #3BB77E;
+                padding: 12px 25px;
+            }
+
+            .rating {
+                display: flex;
+                justify-content: center;
+                gap: 5px;
+                margin-bottom: 20px;
+            }
+          
+            .fa-star {
+                font-size: 24px;
+                color: #ddd;
+                cursor: pointer;
+            }
+          
+            .filled {
+                color: #f9b200;
+            }
+
             #autocomplete {
                 max-width: 400px;
                 margin: 0 auto;
@@ -108,6 +133,116 @@
 
             $('input').focus(function() {
                 $(this).select();
+            });
+        </script>
+
+        <script>
+            const stars = document.querySelectorAll('.fa-star');
+            let currentRating = 0;
+            let isClicked = false;
+    
+            stars.forEach((star, index) => {
+                star.addEventListener('click', () => {
+                    currentRating = index + 1;
+                    isClicked = true;
+    
+                    for (let i = 1; i < stars.length; i++) {
+                        stars[i].classList.remove('filled');
+                    }
+    
+                    for (let i = 1; i < currentRating; i++) {
+                        stars[i].classList.add('filled');
+                    }
+                    
+                    document.getElementById('ratingValue').value = currentRating;
+                });
+    
+                if (index > 0) {
+                    star.addEventListener('mouseover', () => {
+                        if (!isClicked) {
+                            for (let i = 1; i <= index; i++) {
+                                stars[i].classList.add('filled');
+                            }
+                        }
+                    });
+            
+                    star.addEventListener('mouseout', () => {
+                        if (isClicked) {
+                            for (let i = 1; i < stars.length; i++) {
+                                stars[i].classList.remove('filled');
+                            }
+            
+                            for (let i = 1; i < currentRating; i++) {
+                                stars[i].classList.add('filled');
+                            }
+            
+                            isClicked = false;
+                        } 
+                        else
+                        {
+                            for (let i = 1; i < stars.length; i++) {
+                                stars[i].classList.remove('filled');
+                            }
+                        }
+                    });
+                }
+            });
+            stars[0].classList.add('filled');
+            document.getElementById('ratingValue').value = 1;
+
+        </script>
+        <script>
+            $(document).on('submit', '#product_review_form', function(e){
+                e.preventDefault();
+
+                var ratingValue = $('#ratingValue').val();
+                var product_review_message = $('#product_review_message').val();
+                var product_id = $('#product_id').val();
+    
+                var form_data = new FormData();
+
+                form_data.append('ratingValue', ratingValue);
+                form_data.append('product_review_message', product_review_message);
+                form_data.append('product_id', product_id);
+
+                var csrfToken = $('[name="csrfmiddlewaretoken"]').val();
+
+                $.ajax({
+                    url: "/add_review/" + product_id,
+                    type: "POST",
+                    mimeType: "multipart/form-data",
+                    contentType: false,
+                    processData: false,
+                    data: form_data,
+                    headers: {'X-CSRFToken': csrfToken},
+                    dataType: "json",
+                    success: function(response){
+                        if(response.status == 200)
+                        {
+                            $("#product_review_form").load(location.href + " #product_review_form>*", "");
+                            $("#Reviews_div").load(location.href + " #Reviews_div>*", "");
+                            $("#msg-div").load(location.href + " #msg-div>*", "");
+                            $("#Reviews-count").load(location.href + " #Reviews-count>*", "");
+
+                            const stars = document.querySelectorAll('.fa-star');
+                            for (let i = 1; i < stars.length; i++) {
+                                stars[i].classList.remove('filled');
+                            }
+                            document.getElementById('ratingValue').value = 1;
+
+                            const myAlert = document.getElementById('myAlert');
+                            myAlert.style.display = 'block';
+                            myAlert.classList.add('alert-success', 'text-success');
+                            myAlert.innerText = response.message;
+
+                            setInterval(function(){
+                                $('.alert').fadeOut();
+                                myAlert.style.display = 'none';
+                                myAlert.classList.remove('alert-success', 'text-success');
+                            }, 5000);
+                        }
+                    }
+                });
             });
         </script>
     </body>

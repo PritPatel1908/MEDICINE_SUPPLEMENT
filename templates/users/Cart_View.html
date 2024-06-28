@@ -38,6 +38,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <input type="hidden" class="qtvalue" value="{{i.product.product_quantity}}" disabled/>
                             <div class="col-lg-2 col-sm-6 col-6 d-flex flex-row flex-lg-column flex-xl-row text-nowrap">
                                 <div class="">
                                     <div class="input-group mt-2 me-5">
@@ -125,7 +126,7 @@
                                 {% if total == 0 %}
                                     <input class="btn btn-success w-100 shadow-0 mb-2" type="submit" value="Checkout" disabled>
                                 {% else %}
-                                    <input class="btn btn-success w-100 shadow-0 mb-2" type="submit" value="Checkout">
+                                    <input class="btn btn-success w-100 shadow-0 mb-2 checkout_btn" type="submit" value="Checkout">
                                 {% endif %}
                                 <button id="go-back" class="btn btn-light w-100 border mt-2"> Back </button>
                             </div>
@@ -136,5 +137,27 @@
         </div>
     </div>
 </section>
+
+<script>
+    function checkValues() {
+        let qtyVals = document.querySelectorAll('.qtvalue');
+        let checkout_btns = document.getElementsByClassName('checkout_btn');
+
+        let values = [];
+        qtyVals.forEach(function(qtyVal) {
+            values.push(qtyVal.value);
+        });
+        for (let i = 0; i < values.length; i++) {
+            if (values[i] == 0) {
+                for (let j = 0; j < checkout_btns.length; j++) {
+                    checkout_btns[j].classList.add('disabled');
+                  }
+                  break;
+            }
+        }
+    }
+
+    checkValues();
+</script>
 
 {% endblock  %}

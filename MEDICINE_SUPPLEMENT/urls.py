@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from . import views, user_views, admin_views, doctor_view
@@ -169,4 +169,8 @@ urlpatterns = [
     path('feedback', user_views.feedback, name = 'feedback'),
     path('get-search/', user_views.get_search, name = 'get-search'),
     path('generate_invoice/<str:order_tracking_id>', user_views.generate_invoice, name = 'generate_invoice'),
+    path('add_review/<str:product_id>', user_views.add_review, name='add_review'),
+    path('load_more/<str:product_id>', user_views.load_more, name='load_more'),
+    path('user/paymentdone', user_views.payment_done, name='paymentdone'),
+    path('user/cartpaymentdone', user_views.cart_payment_done, name='cartpaymentdone'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

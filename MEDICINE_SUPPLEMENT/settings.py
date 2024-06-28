@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'medicine_supplement_app',
-    'active_link'
+    'active_link',
 ]
 
 MIDDLEWARE = [

@@ -5,7 +5,7 @@ from django.contrib import messages
 import json
 from django.http import JsonResponse
 from medicine_supplement_app import helpers
-from medicine_supplement_app.models import Users,DeliveryAddress,Category,Sub_Category,Company,Product,Offer,Order,Order_Detail,Cart,Cart_Detail,Feedback,Prescription,Prescription_Detail,Payment
+from medicine_supplement_app.models import Users,DeliveryAddress,Category,Sub_Category,Company,Product,Offer,Order,Order_Detail,Cart,Cart_Detail,Feedback,Prescription,Prescription_Detail,Payment,Product_Review
 import razorpay
 from django.conf import settings
 from django.http import HttpResponse
@@ -13,6 +13,7 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.core.mail import EmailMessage
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Avg
 
 # Users Home Page
 def users_home(request):
@@ -204,6 +205,9 @@ def product_detail(request, product_id):
     product_detail = product.product_description
     save = int(product.product_price) - int(product.product_discount_price)
     similar_product = Product.objects.filter(subcategory_id = product.subcategory.subcategory_id)
+    reviews = Product_Review.objects.filter(product = product, user = request.user).order_by('-product_review_date')
+    average_rating = Product_Review.objects.filter(product = product).aggregate(rating=Avg('product_rating'))
+    total_review = reviews.count()
 
     context = {
         'product' : product,
@@ -211,9 +215,48 @@ def product_detail(request, product_id):
         'product_detail' : product_detail,
         'cart' : cart,
         'similar_product' : similar_product,
-        'prescription_status' : prescription_status
+        'prescription_status' : prescription_status,
+        'reviews' : reviews,
+        'average_rating' : average_rating,
+        'total_review': total_review
     }
+
+    if total_review > 0:
+        context['one_star_percentage'] = reviews.filter(product_rating=1).count() / total_review * 100
+        context['two_star_percentage'] = reviews.filter(product_rating=2).count() / total_review * 100
+        context['three_star_percentage'] = reviews.filter(product_rating=3).count() / total_review * 100
+        context['four_star_percentage'] = reviews.filter(product_rating=4).count() / total_review * 100
+        context['five_star_percentage'] = reviews.filter(product_rating=5).count() / total_review * 100
+
     return render(request, 'users/Product_Detail.html', context)
+
+# Product add review
+def add_review(request, product_id):
+    if request.method == 'POST':
+        ratingValue = request.POST.get('ratingValue')
+        product_review_message = request.POST.get('product_review_message')
+        product_id = request.POST.get('product_id')
+
+        product_review = Product_Review(
+            product_review_message = product_review_message,
+            product_rating = ratingValue,
+            product_id = product_id,
+            user = request.user
+        )
+        product_review.save()
+
+        return JsonResponse({'status': 200, 'message': 'Your review is successfully submited...'})
+    return render(request, 'users/Product_Detail.html')
+
+# Product Load more review
+def load_more(request, product_id):
+    total_review = int(request.GET.get('total_review'))
+    limit = 2
+    review_obj = list(Product_Review.objects.filter(product_id = product_id).select_related('user').values('product_review_id', 'product_review_message', 'product_review_date', 'product_rating', 'user__profile_pic', 'user__first_name', 'user__last_name').order_by('-product_review_date')[total_review:total_review+limit])
+    data = {
+        'review' : review_obj,
+    }
+    return JsonResponse(data=data)
 
 # Users Add Cart
 @login_required(login_url='login_page')
@@ -846,19 +889,103 @@ def checkout(request, product_id):
         total = i.product_discount_price
 
     after_discount_value = int(total) - int(discount) + 10
+    razorpay_amount = int(after_discount_value * 100)
 
     client = razorpay.Client(auth=(settings.RAZORPAY_KEY, settings.RAZORPAY_SECRET))
-    payment = client.order.create({'amount':(after_discount_value * 100), 'currency':'INR','payment_capture':1})
+    payment = client.order.create({'amount':razorpay_amount, 'currency':'INR','payment_capture':1})
 
     context = {
         'checkout_product':checkout_product,
         'address':address,
         'discount':discount,
         'after_discount_value':after_discount_value,
+        'razorpay_amount':razorpay_amount,
         'prescription_status':prescription_status,
         'payment':payment
     }
     return render(request, 'users/Checkout.html', context)
+
+def payment_done(request):
+    order_id = request.GET.get('order_id')
+    payment_id = request.GET.get('payment_id')
+    user_id = request.GET.get('user_id')
+    product_id = request.GET.get('product_id')
+    payment_method = request.GET.get('payment_method')
+    order_amount = request.GET.get('order_amount')
+    order_discount = request.GET.get('order_discount')
+    prescription_img = request.FILES.get('prescription_img')
+    order_total_amount = request.GET.get('order_total_amount')
+
+    user = Users.objects.get(user_id = user_id)
+    delevery_address = DeliveryAddress.objects.get(user_id = user_id)
+    
+    product = Product.objects.get(product_id = product_id)
+
+    order = Order(
+        order_total_amount = order_total_amount,
+        order_amount = order_amount,
+        order_discount_price = order_discount,
+        first_name = user.first_name,
+        last_name = user.last_name,
+        phone = user.phone,
+        email = user.email,
+        order_delivery_address = delevery_address.delivery_address,
+        order_delivery_address_pincode = delevery_address.delivery_address_pincode,
+        user_id = user_id,
+        razorpay_order_id = order_id,
+    )
+    order.save()
+
+    order_detail = Order_Detail( 
+        product_name = product.product_name,
+        product_quantity = 1,
+        product_price = product.product_discount_price,
+        product = product,
+        order_id = order.order_id,
+        user_id = user_id
+    )
+    order_detail.save()
+
+    if product.product_prescription_status == 0:
+        prescription = Prescription(
+            prescription_img = prescription_img,
+            user_id = user_id,
+        )
+        prescription.save()
+
+        prescription_detail = Prescription_Detail(
+            order_detail_id = order_detail.order_detail_id,
+            prescription_id = prescription.prescription_id,
+            user_id = user_id
+        )
+        prescription_detail.save()
+
+    product.product_quantity -= 1
+    product.save()
+
+    if payment_method == 'Case On Delivery':
+        payment = Payment(
+            payment_amount = order_total_amount,
+            payment_method = 'Case On Delivery',
+            payment_status = 'Pending',
+            order_id = order.order_id,
+            user_id = request.user.user_id
+        )
+        payment.save()
+    else:
+        payment = Payment(
+            payment_amount = order_total_amount,
+            payment_method = 'Online Payment',
+            payment_status = 'Success',
+            order_id = order.order_id,
+            user_id = user_id,
+            razorpay_payment_id = payment_id,
+            razorpay_payment_status = 'Success',
+            razorpay_order_id = order_id,
+        )
+        payment.save()
+
+    return redirect('/')
 
 # Cart Checkout view
 @login_required(login_url='login_page')
@@ -880,23 +1007,110 @@ def cart_checkout(request, cart_id):
         discount = total * i.offer_rate / 100
         
     after_discount_value = total - discount + shipping_cost
+    razorpay_amount = int(after_discount_value * 100)
 
-    # client = razorpay.Client(auth=('rzp_test_SXFY1D0zq29TGB', 'js7DS3s7maZsQXyF11Fx4xK3'))
-    # payment = client.order.create({'amount':(after_discount_value), 'currency':'INR','payment_capture':1})
     client = razorpay.Client(auth=(settings.RAZORPAY_KEY, settings.RAZORPAY_SECRET))
-    payment = client.order.create({'amount':(after_discount_value), 'currency':'INR','payment_capture':1})
+    payment = client.order.create({'amount':razorpay_amount, 'currency':'INR','payment_capture':1})
+
     context = {
         'cart_items':cart_items,
         'address':address,
         'total':total,
         'discount' : discount,
         'after_discount_value':after_discount_value,
+        'razorpay_amount':razorpay_amount,
         'shipping_cost':shipping_cost,
         'prescription_status':prescription_status,
         'payment':payment
     }
     
     return render(request, 'users/Cart_Checkout.html', context)
+
+def cart_payment_done(request):
+
+    order_id = request.GET.get('order_id')
+    payment_id = request.GET.get('payment_id')
+    user_id = request.GET.get('user_id')
+    payment_method = request.GET.get('payment_method')
+    order_amount = request.GET.get('order_amount')
+    shipping_price = request.GET.get('shipping_price')
+    order_discount = request.GET.get('order_discount')
+    prescription_img = request.FILES.get('prescription_img')
+    order_total_amount = request.GET.get('order_total_amount')
+
+    user = Users.objects.get(user_id = user_id)
+    delevery_address = DeliveryAddress.objects.get(user_id = user_id)
+    cart_user = Cart.objects.get(user_id=user.user_id)
+    cart_items = Cart_Detail.objects.filter(cart_id = cart_user.cart_id)
+
+    order = Order(
+        order_total_amount = order_total_amount,
+        order_amount = order_amount,
+        order_discount_price = order_discount,
+        first_name = user.first_name,
+        last_name = user.last_name,
+        phone = user.phone,
+        email = user.email,
+        order_delivery_address = delevery_address.delivery_address,
+        order_delivery_address_pincode = delevery_address.delivery_address_pincode,
+        user_id = user_id,
+        razorpay_order_id = order_id
+    )
+    order.save()
+
+    for i in cart_items:
+        order_detail = Order_Detail( 
+            product_name = i.product.product_name,
+            product_quantity = i.cart_quantity,
+            product_price = i.product.product_discount_price,
+            product = i.product,
+            order_id = order.order_id,
+            user_id = user.user_id
+        )
+        order_detail.save()
+    
+        if i.product.product_prescription_status == 0:
+            prescription = Prescription(
+                prescription_img = prescription_img,
+                user_id = request.user.user_id,
+            )   
+            prescription.save()
+
+            prescription_detail = Prescription_Detail(
+                order_detail_id = order_detail.order_detail_id,
+                prescription_id = prescription.prescription_id,
+                user_id = request.user.user_id
+            )
+            prescription_detail.save()
+        
+        product = i.product
+        product.product_quantity -= i.cart_quantity
+        product.save()
+
+    if payment_method == 'Case On Delivery':
+        payment = Payment(
+            payment_amount = order_total_amount,
+            payment_method = 'Case On Delivery',
+            payment_status = 'Pending',
+            order_id = order.order_id,
+            user_id = request.user.user_id
+        )
+        payment.save()
+    else:
+        payment = Payment(
+            payment_amount = order_total_amount,
+            payment_method = 'Online Payment',
+            payment_status = 'Success',
+            order_id = order.order_id,
+            user_id = user_id,
+            razorpay_payment_id = payment_id,
+            razorpay_payment_status = 'Success',
+            razorpay_order_id = order_id,
+        )
+        payment.save()
+
+    return redirect('/')
+
 
 # Cart Checkout Order view
 @login_required(login_url='login_page')

@@ -10,6 +10,15 @@ from django.db.models.signals import post_save
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.dispatch import receiver
+import django.utils.timezone
+
+RATING = (
+    (1, '⭐☆☆☆☆'),
+    (2, '⭐⭐☆☆☆'),
+    (3, '⭐⭐⭐☆☆'),
+    (4, '⭐⭐⭐⭐☆'),
+    (5, '⭐⭐⭐⭐⭐'),
+)
 
 class Users(AbstractUser):
     USER = (
@@ -75,6 +84,17 @@ class Product(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True)
     subcategory = models.ForeignKey(Sub_Category, on_delete=models.CASCADE, null=True)
 
+class Product_Review(models.Model):
+    product_review_id = models.BigAutoField(auto_created=True, primary_key=True)
+    product_review_message = models.TextField(null=True, blank=True)
+    product_rating = models.IntegerField(choices=RATING, default=None)
+    product_review_date = models.DateTimeField(default=django.utils.timezone.now)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, related_name="reviews")
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=True, related_name="user")
+
+    def get_rating(self):
+        return self.product_rating
+
 class Offer(models.Model):
     offer_id = models.BigAutoField(auto_created=True, primary_key=True)
     offer_code = models.CharField(max_length=150, unique=True, null=True)
@@ -90,6 +110,7 @@ class Order(models.Model):
     order_id = models.BigAutoField(auto_created=True, primary_key=True)
     order_date = models.DateField(default=datetime.date.today)
     order_amount = models.CharField(max_length=20, null=False)
+    razorpay_order_id = models.CharField(max_length=100, null=True)
     order_discount_price = models.CharField(max_length=20, null=True)
     order_total_amount = models.DecimalField(max_digits=20, decimal_places=2, null=False)
     shipping_price = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, default=10.00)
@@ -229,6 +250,9 @@ class Payment(models.Model):
     payment_date = models.DateField(default=datetime.date.today)
     payment_amount = models.FloatField(null=False)
     payment_method = models.CharField(max_length=150, null=False)
-    payment_status = models.CharField(max_length=150, null=False)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE,null=False)
+    payment_status = models.CharField(max_length=150, null=True)
+    razorpay_order_id = models.CharField(max_length=100, null=True)
+    razorpay_payment_id = models.CharField(max_length=100, null=True)
+    razorpay_payment_status = models.CharField(max_length=100, null=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE,null=True)
     user = models.ForeignKey(Users, on_delete=models.CASCADE,null=True)

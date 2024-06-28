@@ -109,4 +109,4 @@ $("#sign_up_btn").click(
     function(){
       $("#login").removeClass("d-block").addClass("d-none");
     }
-  )
+)

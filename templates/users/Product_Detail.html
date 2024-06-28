@@ -2,6 +2,11 @@
 {% load static %}
 {% load product_detail_cart %}
 {% block content %} 
+<style>
+  .not-visibal{
+      display: none;
+  }
+</style>
 <!-- content -->
 <div class="position-fixed top-5 end-0 p-3" id="myAlert" style="z-index: 11;">
 </div>
@@ -31,17 +36,18 @@
               {{product.product_name}} <br />
             </h4>
             <div class="d-flex flex-row my-3">
-              <div class="text-warning mb-1 me-2">
-                <i class="fa fa-star"></i>
-                <i class="fa fa-star"></i>
-                <i class="fa fa-star"></i>
-                <i class="fa fa-star"></i>
-                <i class="fas fa-star-half-alt"></i>
-                <span class="ms-1">
-                  4.5
-                </span>
+              <div class="product-detail-rating" id="Reviews-count">
+                <div class="product-rate-cover text-end">
+                    <div class="product-rate d-inline-block">
+                        {% if average_rating.rating == Null %}
+                            <div class="product-rating" style="width: 0%"></div>
+                        {% else %}
+                            <div class="product-rating" style="width: {% widthratio average_rating.rating 5 100 %}%;"></div>
+                        {% endif %}
+                    </div>
+                    <span class="font-small ml-5 text-muted"> ({{reviews.count}} reviews)</span>
+                </div>
               </div>
-
               <span class="text-muted"><i class="fas fa-shopping-basket fa-sm mx-1"></i>{{product.product_quantity}}</span>
               {% if product.product_quantity == 0 %}
                 <span class="text-danger ms-2">Out Of The Stock</span>
@@ -139,6 +145,9 @@
               <li class="nav-item d-flex" role="presentation">
                 <a data-mdb-pill-init class="nav-link d-flex align-items-center justify-content-center w-100" id="ex1-tab-3" data-mdb-toggle="pill" href="#ex1-pills-3" role="tab" aria-controls="ex1-pills-3" aria-selected="false">Product Description</a>
               </li>
+              <li class="nav-item d-flex" role="presentation">
+                <a data-mdb-pill-init class="nav-link d-flex align-items-center justify-content-center w-100" id="ex1-tab-4" data-mdb-toggle="pill" href="#ex1-pills-4" role="tab" aria-controls="ex1-pills-4" aria-selected="false">Product Reviews</a>
+              </li>
             </ul>
             <!-- Pills navs -->
   
@@ -215,6 +224,220 @@
                   <h5>Product Disadvantage</h5>
                   {{product.product_disadvantage|linebreaks}}
                 {% endif %}
+              </div>
+
+              <div class="tab-pane fade mb-2" id="ex1-pills-4" role="tabpanel" aria-labelledby="ex1-tab-4">
+                <!--Comments-->
+                <div class="comments-area" id="Reviews_div">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h4 class="mb-30">Customer questions & answers</h4>
+                            <div class="comment-list" id="content">
+                                {% for review in reviews|slice:"0:3" %}
+                                    <div class="single-comment justify-content-between d-flex mb-30" >
+                                        <div class="user justify-content-between d-flex">
+                                            <div class="thumb text-center">
+                                              <div class="col">
+                                                {% if review.user.profile_pic != '' and review.user.profile_pic != Null%}
+                                                    <img style="min-width: 130px;height: 130px;" src="/{{review.user.profile_pic}}" alt="" />
+                                                {% else %}
+                                                    <img style="min-width: 130px;height: 130px;" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVz_XdPamId2_uvEeLG23zjW02eAXgZhCfoQ&usqp=CAU" alt="" />
+                                                {% endif %}
+                                              </div>
+                                              <div class="col">
+                                                <a class="font-heading text-brand">{{review.user.first_name}} {{review.user.last_name}}</a>
+                                              </div>
+                                            </div>
+                                            <div class="desc">
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="font-xs text-muted">{{review.product_review_date}} </span>
+                                                    </div>
+                                                    <div class="product-rate d-inline-block mt-2 ms-2">
+                                                        {% if review.product_rating == 1 %}
+                                                            <div class="product-rating" style="width: 20%"></div>
+                                                        {% elif review.product_rating == 2 %}
+                                                            <div class="product-rating" style="width: 40%"></div>
+                                                        {% elif review.product_rating == 3 %}
+                                                            <div class="product-rating" style="width: 60%"></div>
+                                                        {% elif review.product_rating == 4 %}
+                                                            <div class="product-rating" style="width: 80%"></div>
+                                                        {% elif review.product_rating == 5 %}
+                                                            <div class="product-rating" style="width: 100%"></div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <!-- <p class="mb-10"> {{review.product_review_message}} <a href="#" class="reply">Reply</a></p> -->
+                                                <p class="mb-10"> {{review.product_review_message}}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="product_id_val" name="product_id_val" value="{{review.product.product_id}}">
+                                {% endfor %}
+                                <div class="col-12 text-center">
+                                    <div class="spinner-border text-primary mt-2 not-visibal" role="status" id="spinner">
+                                        <span class="sr-only text-center">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="viewMoreReviewsBtn" type="button" class="btn btn-primary">View More</button>
+                            <div class="alert alert-danger mt-2 not-visibal" role="alert" id="alert">
+                                No more review to load!!
+                            </div>
+                            {{total_review|json_script:"json-total"}}
+                            <script>
+                                const loadBtn = document.getElementById("viewMoreReviewsBtn");
+                                const spinner = document.getElementById("spinner");
+                                const product_id = document.getElementById("product_id_val").value;
+                                const alert = document.getElementById("alert");
+                                const total = JSON.parse(document.getElementById("json-total").textContent);
+                                
+                                loadBtn.addEventListener('click', () => {
+                                    var _current_item = $('.single-comment').length;
+                                    const content = document.getElementById("content");
+
+                                    $.ajax({
+                                        url: '/load_more/' + product_id,
+                                        type: 'GET',
+                                        data: {
+                                            'total_review':_current_item
+                                        },
+                                        beforeSend: function(){
+                                            loadBtn.classList.add('not-visibal');
+                                            spinner.classList.remove('not-visibal');
+                                        },
+                                        success: function(response){
+                                            const data = response.review;
+                                            spinner.classList.add('not-visibal');
+
+                                            data.map(review => {
+                                                const reviewDate = moment(review.product_review_date).format('MMMM D, YYYY, h:mm a');
+                                                content.innerHTML += `
+                                                <div class="single-comment justify-content-between d-flex mb-30" >
+                                                    <div class="user justify-content-between d-flex">
+                                                        <div class="thumb text-center">
+                                                          <div class="col">
+                                                            <img style="min-width: 130px;height: 130px;" src="/${review.user__profile_pic}" alt="Profile Pic" />
+                                                          </div>
+                                                          <div class="col">
+                                                            <a class="font-heading text-brand">${review.user__first_name} ${review.user__last_name}</a>
+                                                          </div>
+                                                        </div>
+                                                        <div class="desc">
+                                                            <div class="d-flex justify-content-between">
+                                                                <div class="d-flex align-items-center">
+                                                                    <span class="font-xs text-muted">${reviewDate} </span>
+                                                                </div>
+                                                                <div class="product-rate d-inline-block">
+                                                                    <div class="product-rating" style="width: ${review.product_rating * 20}%"></div>
+                                                                </div>
+                                                            </div>
+                                                            <p class="mb-10"> ${review.product_review_message} <a href="#" class="reply">Reply</a></p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                `
+                                            });
+
+                                            if(_current_item == total){
+                                                alert.classList.remove('not-visibal');
+                                            }
+                                            else
+                                            {
+                                                loadBtn.classList.remove('not-visibal');
+                                            }
+                                        },
+                                        error: function(err){
+                                            console.log(err);
+                                        }
+                                    })
+                                });
+                            </script>
+
+                        </div>
+                        <div class="col-lg-4">
+                            <h4 class="mb-30">Customer reviews</h4>
+                            <div class="d-flex mb-30">
+                                <div class="product-rate d-inline-block mr-15">
+                                  {% if average_rating.rating == Null %}
+                                    <div class="product-rating" style="width: 0%"></div>
+                                  {% else %}
+                                    <div class="product-rating" style="width: {% widthratio average_rating.rating 5 100 %}%;"></div>
+                                  {% endif %}
+                                </div>
+                                <h6>
+                                  {% if average_rating.rating == Null %}
+                                    0 out of 5
+                                  {% else %}
+                                    {{average_rating.rating|floatformat}} out of 5
+                                  {% endif %}
+                                </h6>
+                            </div>
+                            <div class="progress">
+                                <span>5 star</span>
+                                <div class="progress-bar" role="progressbar" style="width: {{five_star_percentage|floatformat}}%" aria-valuenow="{{five_star_percentage|floatformat}}" aria-valuemin="0" aria-valuemax="100">{{five_star_percentage|floatformat}}%</div>
+                            </div>
+                            <div class="progress">
+                                <span>4 star</span>
+                                <div class="progress-bar" role="progressbar" style="width: {{four_star_percentage|floatformat}}%" aria-valuenow="{{four_star_percentage|floatformat}}" aria-valuemin="0" aria-valuemax="100">{{four_star_percentage|floatformat}}%</div>
+                            </div>
+                            <div class="progress">
+                                <span>3 star</span>
+                                <div class="progress-bar" role="progressbar" style="width: {{three_star_percentage|floatformat}}%" aria-valuenow="{{three_star_percentage|floatformat}}" aria-valuemin="0" aria-valuemax="100">{{three_star_percentage|floatformat}}%</div>
+                            </div>
+                            <div class="progress">
+                                <span>2 star</span>
+                                <div class="progress-bar" role="progressbar" style="width: {{two_star_percentage|floatformat}}%" aria-valuenow="{{two_star_percentage|floatformat}}" aria-valuemin="0" aria-valuemax="100">{{two_star_percentage|floatformat}}%</div>
+                            </div>
+                            <div class="progress mb-30">
+                                <span>1 star</span>
+                                <div class="progress-bar" role="progressbar" style="width: {{one_star_percentage|floatformat}}%" aria-valuenow="{{one_star_percentage|floatformat}}" aria-valuemin="0" aria-valuemax="100">{{one_star_percentage|floatformat}}%</div>
+                            </div>
+                            <a href="#" class="font-xs text-muted">How are ratings calculated?</a>
+                        </div>
+                    </div>
+                </div>
+                <!--comment form-->
+                <div id="msg-div">
+                  {% if reviews %}
+                    <h4>You have already submit your review</h4>
+                  {% else %}
+                    <div class="comment-form">
+                      <div>
+                          <div id="myAlert" class="alert" style="display: none;">
+                          </div>
+                      </div>
+                      <h4 class="mb-15">Add a review</h4>
+                      {% comment %} <div class="product-rate d-inline-block mb-30"></div> {% endcomment %}
+                      <div class="rating" id="rating_div">
+                          <i class="fa fa-star" id="star-1"></i>
+                          <i class="fa fa-star" id="star-2"></i>
+                          <i class="fa fa-star" id="star-3"></i>
+                          <i class="fa fa-star" id="star-4"></i>
+                          <i class="fa fa-star" id="star-5"></i>
+                      </div>
+                      <input type="hidden" id="ratingValue" name="ratingValue" value="">
+                      <div class="row">
+                          <div class="col-lg-12 col-md-12">
+                              <form class="form-contact comment_form" id="product_review_form" method="POST">
+                                  {% csrf_token %}
+                                  <input type="hidden" id="product_id" name="product_id" value="{{product.product_id}}">
+                                  <div class="row">
+                                      <div class="col-12">
+                                          <div class="form-group">
+                                              <textarea class="form-control w-100" required name="product_review_message" id="product_review_message" cols="30" rows="9" placeholder="Enter Your Review Message..."></textarea>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div class="form-group">
+                                      <button type="submit" class="button button-contactForm">Submit Review</button>
+                                  </div>
+                              </form>
+                          </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
               </div>
             </div>
             <!-- Pills content -->
