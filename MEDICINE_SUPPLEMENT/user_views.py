@@ -200,13 +200,14 @@ def product_detail(request, product_id):
     prescription_status = Product.objects.filter(product_id = product_id, product_prescription_status = 0).count()
     if request.user.is_authenticated:
         cart = Cart_Detail.objects.filter(user_id = request.user.user_id)
+        reviews_check = Product_Review.objects.filter(product = product,user = request.user).order_by('-product_review_date')
     else:
         cart = Cart_Detail.objects.all()
+        reviews_check = Product_Review.objects.filter(product = product).order_by('-product_review_date')
     product_detail = product.product_description
     save = int(product.product_price) - int(product.product_discount_price)
     similar_product = Product.objects.filter(subcategory_id = product.subcategory.subcategory_id)
     reviews = Product_Review.objects.filter(product = product).order_by('-product_review_date')
-    reviews_check = Product_Review.objects.filter(product = product,user = request.user).order_by('-product_review_date')
     average_rating = Product_Review.objects.filter(product = product).aggregate(rating=Avg('product_rating'))
     total_review = reviews.count()
 
