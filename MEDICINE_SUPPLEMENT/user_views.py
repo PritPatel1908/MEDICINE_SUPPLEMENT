@@ -206,7 +206,7 @@ def product_detail(request, product_id):
     save = int(product.product_price) - int(product.product_discount_price)
     similar_product = Product.objects.filter(subcategory_id = product.subcategory.subcategory_id)
     reviews = Product_Review.objects.filter(product = product).order_by('-product_review_date')
-    reviews_check = Product_Review.objects.filter(product = product, user = request.user).order_by('-product_review_date')
+    reviews_check = Product_Review.objects.filter(product = product,user = request.user).order_by('-product_review_date')
     average_rating = Product_Review.objects.filter(product = product).aggregate(rating=Avg('product_rating'))
     total_review = reviews.count()
 
@@ -218,7 +218,7 @@ def product_detail(request, product_id):
         'similar_product' : similar_product,
         'prescription_status' : prescription_status,
         'reviews' : reviews,
-        'reviews_chech' : reviews_check,
+        'reviews_check' : reviews_check,
         'average_rating' : average_rating,
         'total_review': total_review
     }
